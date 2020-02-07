@@ -18,6 +18,6 @@ defmodule Cluster.Logger do
 
   @compile {:inline, log_message: 2}
   defp log_message(t, msg) do
-    "[libcluster:#{t}] #{msg}"
+    "[libcluster:#{inspect(t)}] #{msg}"
   end
 end
