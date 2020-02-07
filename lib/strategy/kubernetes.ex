@@ -116,13 +116,18 @@ defmodule Cluster.Strategy.Kubernetes do
     new_nodelist = MapSet.new(get_nodes(state))
     nodes = Node.list()
 
+    debug(nodes, "load: current connected nodes")
+
     added =
       MapSet.union(
         MapSet.difference(new_nodelist, meta),
         MapSet.new(Enum.filter(new_nodelist, &(&1 not in nodes)))
       )
 
+    debug(added, "load: added nodes")
+
     removed = MapSet.difference(state.meta, new_nodelist)
+    debug(removed, "load: removed nodes")
 
     new_nodelist =
       case Cluster.Strategy.disconnect_nodes(
@@ -159,6 +164,8 @@ defmodule Cluster.Strategy.Kubernetes do
       end
 
     Process.send_after(self(), :load, polling_interval(state))
+
+    debug(new_nodelist, "load: new_nodelist")
 
     %State{state | :meta => new_nodelist}
   end
@@ -272,51 +279,61 @@ defmodule Cluster.Strategy.Kubernetes do
   end
 
   defp parse_response(:endpoints, resp) do
-    case resp do
-      %{"items" => items} when is_list(items) ->
-        Enum.reduce(items, [], fn
-          %{"subsets" => subsets}, acc when is_list(subsets) ->
-            addrs =
-              Enum.flat_map(subsets, fn
-                %{"addresses" => addresses} when is_list(addresses) ->
-                  Enum.map(addresses, fn %{"ip" => ip, "targetRef" => %{"namespace" => namespace}} =
-                                           address ->
-                    %{ip: ip, namespace: namespace, hostname: address["hostname"]}
-                  end)
+    results =
+      case resp do
+        %{"items" => items} when is_list(items) ->
+          Enum.reduce(items, [], fn
+            %{"subsets" => subsets}, acc when is_list(subsets) ->
+              addrs =
+                Enum.flat_map(subsets, fn
+                  %{"addresses" => addresses} when is_list(addresses) ->
+                    Enum.map(addresses, fn %{
+                                             "ip" => ip,
+                                             "targetRef" => %{"namespace" => namespace}
+                                           } = address ->
+                      %{ip: ip, namespace: namespace, hostname: address["hostname"]}
+                    end)
 
-                _ ->
-                  []
-              end)
+                  _ ->
+                    []
+                end)
 
-            acc ++ addrs
+              acc ++ addrs
 
-          _, acc ->
-            acc
-        end)
+            _, acc ->
+              acc
+          end)
 
-      _ ->
-        []
-    end
+        _ ->
+          []
+      end
+
+    debug(results, "results from parsing Kubernetes response")
+    results
   end
 
   defp parse_response(:pods, resp) do
-    case resp do
-      %{"items" => items} when is_list(items) ->
-        Enum.map(items, fn
-          %{
-            "status" => %{"podIP" => ip},
-            "metadata" => %{"namespace" => ns}
-          } ->
-            %{ip: ip, namespace: ns}
+    results =
+      case resp do
+        %{"items" => items} when is_list(items) ->
+          Enum.map(items, fn
+            %{
+              "status" => %{"podIP" => ip},
+              "metadata" => %{"namespace" => ns}
+            } ->
+              %{ip: ip, namespace: ns}
 
-          _ ->
-            nil
-        end)
-        |> Enum.filter(&(&1 != nil))
+            _ ->
+              nil
+          end)
+          |> Enum.filter(&(&1 != nil))
 
-      _ ->
-        []
-    end
+        _ ->
+          []
+      end
+
+    debug(results, "results from parsing Kubernetes response")
+    results
   end
 
   defp format_node(:ip, %{ip: ip}, app_name, _cluster_name, _service_name),
