@@ -14,10 +14,12 @@ defmodule Cluster.Strategy.Epmd do
 
   """
   use Cluster.Strategy
-
+  import Cluster.Logger
   alias Cluster.Strategy.State
 
   def start_link([%State{config: config} = state]) do
+    debug("Cluster.Strategy.Epmd.start_link", state)
+
     case Keyword.get(config, :hosts, []) do
       [] ->
         :ignore

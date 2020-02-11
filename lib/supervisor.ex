@@ -59,7 +59,11 @@ defmodule Cluster.Supervisor do
   end
 
   defp get_configured_topologies(config) do
+    IO.inspect("get_configured_topologies")
+
     for {topology, spec} <- config do
+      IO.inspect(topology)
+      IO.inspect(spec)
       strategy = Keyword.fetch!(spec, :strategy)
       state = build_initial_state([{:topology, topology} | spec])
 
