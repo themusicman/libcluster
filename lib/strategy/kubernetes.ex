@@ -233,8 +233,12 @@ defmodule Cluster.Strategy.Kubernetes do
             :pods -> "api/v1/namespaces/#{namespace}/pods?labelSelector=#{selector}"
           end
 
+        IO.inspect(path: path)
         headers = [{'authorization', 'Bearer #{token}'}]
         http_options = [ssl: [verify: :verify_none], timeout: 15000]
+
+        IO.inspect(headers: headers)
+        IO.inspect(master: master)
 
         case :httpc.request(:get, {'https://#{master}/#{path}', headers}, http_options, []) do
           {:ok, {{_version, 200, _status}, _headers, body}} ->
@@ -287,6 +291,7 @@ defmodule Cluster.Strategy.Kubernetes do
 
   defp parse_response(:endpoints, resp) do
     IO.inspect("parse_response :endpoints")
+    IO.inspect(resp)
 
     results =
       case resp do
@@ -324,6 +329,7 @@ defmodule Cluster.Strategy.Kubernetes do
 
   defp parse_response(:pods, resp) do
     IO.inspect("parse_response :pods")
+    IO.inspect(resp)
 
     results =
       case resp do
