@@ -53,8 +53,9 @@ defmodule Cluster.Supervisor do
   @doc false
   @impl Supervisor
   def init([config, opts]) do
+    IO.inspect("init")
     opts = Keyword.put(opts, :strategy, :one_for_one)
-    children = get_configured_topologies(config)
+    children = get_configured_topologies(config) |> IO.inspect()
     Supervisor.init(children, opts)
   end
 
@@ -76,7 +77,9 @@ defmodule Cluster.Supervisor do
 
   defp build_initial_state(spec) do
     topology = Keyword.fetch!(spec, :topology)
+    IO.inspect(topology: topology)
     config = Keyword.get(spec, :config, [])
+    IO.inspect(config: config)
     connect_mfa = Keyword.get(spec, :connect, {:net_kernel, :connect_node, []})
     disconnect_mfa = Keyword.get(spec, :disconnect, {:erlang, :disconnect_node, []})
     list_nodes_mfa = Keyword.get(spec, :list_nodes, {:erlang, :nodes, [:connected]})
@@ -89,5 +92,6 @@ defmodule Cluster.Supervisor do
       config: config,
       meta: nil
     }
+    |> IO.inspect()
   end
 end

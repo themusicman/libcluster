@@ -96,6 +96,8 @@ defmodule Cluster.Strategy.Kubernetes do
   end
 
   def init([%State{} = state]) do
+    IO.inspect("Cluster.Strategy.Kubernetes.init")
+    IO.inspect(state)
     {:ok, load(state)}
   end
 
@@ -113,9 +115,11 @@ defmodule Cluster.Strategy.Kubernetes do
   end
 
   defp load(%State{topology: topology, meta: meta} = state) do
+    IO.inspect("Cluster.Strategy.Kubernetes.load")
     new_nodelist = MapSet.new(get_nodes(state))
     nodes = Node.list()
 
+    IO.inspect(nodes: nodes)
     debug(nodes, "load: current connected nodes")
 
     added =
@@ -125,9 +129,11 @@ defmodule Cluster.Strategy.Kubernetes do
       )
 
     debug(added, "load: added nodes")
+    IO.inspect(added: added)
 
     removed = MapSet.difference(state.meta, new_nodelist)
     debug(removed, "load: removed nodes")
+    IO.inspect(removed: removed)
 
     new_nodelist =
       case Cluster.Strategy.disconnect_nodes(
@@ -166,6 +172,7 @@ defmodule Cluster.Strategy.Kubernetes do
     Process.send_after(self(), :load, polling_interval(state))
 
     debug(new_nodelist, "load: new_nodelist")
+    IO.inspect(new_nodelist: new_nodelist)
 
     %State{state | :meta => new_nodelist}
   end
@@ -279,6 +286,8 @@ defmodule Cluster.Strategy.Kubernetes do
   end
 
   defp parse_response(:endpoints, resp) do
+    IO.inspect("parse_response :endpoints")
+
     results =
       case resp do
         %{"items" => items} when is_list(items) ->
@@ -309,10 +318,13 @@ defmodule Cluster.Strategy.Kubernetes do
       end
 
     debug(results, "results from parsing Kubernetes response")
+    IO.inspect(results: results)
     results
   end
 
   defp parse_response(:pods, resp) do
+    IO.inspect("parse_response :pods")
+
     results =
       case resp do
         %{"items" => items} when is_list(items) ->
@@ -333,6 +345,7 @@ defmodule Cluster.Strategy.Kubernetes do
       end
 
     debug(results, "results from parsing Kubernetes response")
+    IO.inspect(results: results)
     results
   end
 
